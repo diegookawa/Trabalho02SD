@@ -22,7 +22,6 @@ class Servidor(object):
     @Pyro5.server.oneway
     def cadastrarCompromisso(self, nome, compromisso, convidadosCompromisso):
         Servidor.compromissos.append((nome, compromisso))
-
         if(convidadosCompromisso is not None):
             convidados = convidadosCompromisso.split(",")
             nomeCompromisso = compromisso["nome"]
@@ -33,7 +32,8 @@ class Servidor(object):
                     option = callbackConvidado.receberMensagemCompromisso(f"Deseja participar do compromisso: {nomeCompromisso}?\n1 - Sim\n2 - Não\n")
                     
                     if option == 1:
-                        Servidor.compromissos.append((callbackConvidado.getNome(), compromisso))
+                        novoCompromisso = compromisso.copy()
+                        Servidor.compromissos.append((callbackConvidado.getNome(), novoCompromisso))
 
     @Pyro5.server.oneway
     def cancelarCompromisso(self, nome):
@@ -71,6 +71,7 @@ def verificarAlertas():
                         callbackCliente = Pyro5.api.Proxy(Servidor.clientes[compromisso[0]])
                         callbackCliente.notificacao(f"ALERTA DE COMPROMISSO: {nomeCompromisso}")
                         compromisso[1]["alertado"] = True
+                        time.sleep(0.3)
         except:
             pass
 
