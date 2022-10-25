@@ -78,8 +78,9 @@ def main():
                 compromisso, convidadosCompromisso = callback.cadastrarCompromisso()
                 servidor.cadastrarCompromisso(callback.nome, compromisso, convidadosCompromisso)
 
-            # elif option == 2:
-            #     servidor
+            elif option == 2:
+                nomeCompromisso = input("Informe o nome do compromisso a ser cancelado: ")
+                servidor.cancelarCompromisso(nomeCompromisso)
 
 if __name__ == "__main__":
     main()

@@ -34,6 +34,12 @@ class Servidor(object):
                     if option == 1:
                         Servidor.compromissos.append((callbackConvidado.getNome(), compromisso))
 
+    @Pyro5.server.oneway
+    def cancelarCompromisso(self, nome):
+        for i, compromisso in enumerate(Servidor.compromissos):
+            if nome == compromisso[1]["nome"]:
+                Servidor.compromissos.pop(i)
+
 def main():
     daemon = Pyro5.server.Daemon()         # make a Pyro daemon
     ns = Pyro5.api.locate_ns()             # find the name server
