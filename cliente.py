@@ -1,12 +1,13 @@
 # saved as greeting-client.py
 import Pyro5.api
 import threading
+import time
 
 @Pyro5.api.expose
 @Pyro5.api.callback
 class cliente_callback(object):
 
-    def __init__(self, nome) -> None:
+    def __init__(self, nome):
         self.nome = nome
         self.public_key = ""
         self.referenciaCliente = ""
@@ -29,12 +30,21 @@ class cliente_callback(object):
     def setPublic_key(self, public_key):
         cliente_callback.public_key = public_key
 
+    def imprimirCompromissos(self, compromissos):
+        for compromisso in compromissos:
+            print(f"Nome: {compromisso['nome']}, Data: {compromisso['data']}, Horário: {compromisso['horario']}", end=" ")
+            if(compromisso['horarioAlerta'] is not None):
+                print(f"Horário de Alerta: {compromisso['horarioAlerta']}")
+
+        input("Digite ENTER para voltar...")
+
     def cadastrarCompromisso(self):
         compromisso = {}
         convidadosCompromisso = None
         nomeCompromisso = input("Informe o nome do compromisso: ")
-        dataCompromisso = input("Informe a data do compromisso: ")
+        dataCompromisso = input("Informe a data do compromisso(dd/mm/aaaa): ")
         horarioCompromisso = input("Informe o horario do compromisso: ")
+        compromisso["horarioAlerta"] = None
 
         optionConvidados = int(input("Deseja adicionar convidados?\n1 - Sim\n2 - Não\n"))
         if optionConvidados != 2:
@@ -72,15 +82,29 @@ def main():
     
         option = -1
         while option != 5:
-            option = int(input("Informe uma opcao:\n1 - Cadastrar compromisso\n2 - Cancelar compromisso\n3 - Consultar compromisso\n4 - Atualizar\n5 - Sair\n"))
+            try:
+                option = int(input("Informe uma opcao:\n1 - Cadastrar compromisso\n2 - Cancelar compromisso\n3 - Consultar compromisso\n4 - Atualizar\n5 - Sair\n"))
 
-            if option == 1:
-                compromisso, convidadosCompromisso = callback.cadastrarCompromisso()
-                servidor.cadastrarCompromisso(callback.nome, compromisso, convidadosCompromisso)
+                if option == 1:
+                    compromisso, convidadosCompromisso = callback.cadastrarCompromisso()
+                    servidor.cadastrarCompromisso(callback.nome, compromisso, convidadosCompromisso)
+                    time.sleep(0.3)
 
-            elif option == 2:
-                nomeCompromisso = input("Informe o nome do compromisso a ser cancelado: ")
-                servidor.cancelarCompromisso(nomeCompromisso)
+                elif option == 2:
+                    nomeCompromisso = input("Informe o nome do compromisso a ser cancelado: ")
+                    servidor.cancelarCompromisso(nomeCompromisso)
+                    time.sleep(0.3)
+
+                elif option == 3:
+                    dataCompromisso = input("Informe a data do compromisso a ser consultado (dd/mm/aaaa): ")
+                    servidor.consultarCompromisso(dataCompromisso, callback.referenciaCliente)
+                    time.sleep(0.3)
+                    
+                elif option == 4:
+                    time.sleep(0.3)
+
+            except:
+                pass
 
 if __name__ == "__main__":
     main()

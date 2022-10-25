@@ -1,22 +1,22 @@
 # saved as greeting-server.py
 import Pyro5.api
+import datetime
+import threading
 from Crypto.PublicKey import RSA
 
 @Pyro5.api.expose
 class Servidor(object):
-
+    key = RSA.generate(2048)
     clientes = {}
     compromissos = []
+    public_key = key.publickey().exportKey("PEM")
+    private_key = key.exportKey("PEM")
 
     @Pyro5.server.oneway
     def cadastro(self, referenciaCliente, nome):
         cliente = Pyro5.api.Proxy(referenciaCliente)
-        key = RSA.generate(2048)
-        public_key = key.publickey().exportKey("PEM")
-        private_key = key.exportKey("PEM")
-        Servidor.clientes[nome] = (referenciaCliente, private_key)
-
-        cliente.setPublic_key(public_key)
+        Servidor.clientes[nome] = (referenciaCliente)
+        cliente.setPublic_key(Servidor.public_key)
 
     @Pyro5.server.oneway
     def cadastrarCompromisso(self, nome, compromisso, convidadosCompromisso):
@@ -28,7 +28,7 @@ class Servidor(object):
 
             for convidado in convidados:
                 if(Servidor.clientes.get(convidado) is not None):
-                    callbackConvidado = Pyro5.api.Proxy(Servidor.clientes[convidado][0])
+                    callbackConvidado = Pyro5.api.Proxy(Servidor.clientes[convidado])            
                     option = callbackConvidado.receberMensagemCompromisso(f"Deseja participar do compromisso: {nomeCompromisso}?\n1 - Sim\n2 - Não\n")
                     
                     if option == 1:
@@ -40,14 +40,36 @@ class Servidor(object):
             if nome == compromisso[1]["nome"]:
                 Servidor.compromissos.pop(i)
 
+    @Pyro5.server.oneway
+    def consultarCompromisso(self, data, referenciaCliente):
+        callbackCliente = Pyro5.api.Proxy(referenciaCliente)
+        comp = []        
+
+        for compromisso in Servidor.compromissos:
+            if data == compromisso[1]["data"]:
+                if not self.isInList(comp, compromisso[1]["nome"]):
+                    comp.append(compromisso[1])
+
+        callbackCliente.imprimirCompromissos(comp)   
+
+    @Pyro5.server.oneway
+    def verificarAlertas(self):
+        print(datetime.datetime.now())
+
+    def isInList(self, list, name):
+        for element in list:
+            if name == element['nome']:
+                return True
+        return False
+
 def main():
     daemon = Pyro5.server.Daemon()         # make a Pyro daemon
     ns = Pyro5.api.locate_ns()             # find the name server
     uri = daemon.register(Servidor)        # register the greeting maker as a Pyro object
     ns.register("Agenda", uri)             # register the object with a name in the name server
 
-    print("Ready.")
-    daemon.requestLoop()                   # start the event loop of the server to wait for calls
-
+    print("Ready.")                
+    daemon.requestLoop()   
+    
 if __name__ == "__main__":
     main()
