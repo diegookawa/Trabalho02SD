@@ -47,7 +47,7 @@ class Servidor(object):
         comp = []        
 
         for compromisso in Servidor.compromissos:
-            if data == compromisso[1]["data"]:
+            if data == compromisso[1]["data"] and compromisso[0] == callbackCliente.getNome():
                 if not self.isInList(comp, compromisso[1]["nome"]):
                     comp.append(compromisso[1])
 
@@ -62,20 +62,19 @@ class Servidor(object):
 def verificarAlertas():
     while True:
         try:
-            for i, compromisso in enumerate(Servidor.compromissos):
+            for compromisso in Servidor.compromissos:
                 if compromisso[1]["data"] == str(datetime.date.today()):
                     t = time.localtime()
                     horarioAtual = time.strftime("%H:%M", t)
-                    if compromisso[1]["horarioAlerta"] == str(horarioAtual):
+                    if compromisso[1]["horarioAlerta"] == str(horarioAtual) and compromisso[1]["alertado"] == False:
                         nomeCompromisso = compromisso[1]["nome"]
                         callbackCliente = Pyro5.api.Proxy(Servidor.clientes[compromisso[0]])
                         callbackCliente.notificacao(f"ALERTA DE COMPROMISSO: {nomeCompromisso}")
-                        if nomeCompromisso == compromisso[1]["nome"]:
-                            Servidor.compromissos.pop(i)
+                        compromisso[1]["alertado"] = True
         except:
             pass
 
-        time.sleep(2)
+        time.sleep(0.3)
 
 def main():
     daemon = Pyro5.server.Daemon()         # make a Pyro daemon

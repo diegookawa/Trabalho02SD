@@ -58,6 +58,7 @@ class cliente_callback(object):
         compromisso["nome"] = nomeCompromisso
         compromisso["data"] = dataCompromisso
         compromisso["horario"] = horarioCompromisso
+        compromisso["alertado"] = False
         
         return compromisso, convidadosCompromisso
 
@@ -83,7 +84,7 @@ def main():
         option = -1
         while option != 5:
             try:
-                option = int(input("Informe uma opcao:\n1 - Cadastrar compromisso\n2 - Cancelar compromisso\n3 - Consultar compromisso\n4 - Atualizar\n5 - Sair\n"))
+                option = int(input("Informe uma opcao:\n1 - Cadastrar compromisso\n2 - Cancelar compromisso\n3 - Consultar compromissos\n4 - Atualizar\n5 - Sair\n"))
 
                 if option == 1:
                     compromisso, convidadosCompromisso = callback.cadastrarCompromisso()
