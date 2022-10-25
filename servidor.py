@@ -2,6 +2,7 @@
 import Pyro5.api
 import datetime
 import threading
+import time
 from Crypto.PublicKey import RSA
 
 @Pyro5.api.expose
@@ -51,16 +52,30 @@ class Servidor(object):
                     comp.append(compromisso[1])
 
         callbackCliente.imprimirCompromissos(comp)   
-
-    @Pyro5.server.oneway
-    def verificarAlertas(self):
-        print(datetime.datetime.now())
-
+    
     def isInList(self, list, name):
         for element in list:
             if name == element['nome']:
                 return True
         return False
+
+def verificarAlertas():
+    while True:
+        try:
+            for i, compromisso in enumerate(Servidor.compromissos):
+                if compromisso[1]["data"] == str(datetime.date.today()):
+                    t = time.localtime()
+                    horarioAtual = time.strftime("%H:%M", t)
+                    if compromisso[1]["horarioAlerta"] == str(horarioAtual):
+                        nomeCompromisso = compromisso[1]["nome"]
+                        callbackCliente = Pyro5.api.Proxy(Servidor.clientes[compromisso[0]])
+                        callbackCliente.notificacao(f"ALERTA DE COMPROMISSO: {nomeCompromisso}")
+                        if nomeCompromisso == compromisso[1]["nome"]:
+                            Servidor.compromissos.pop(i)
+        except:
+            pass
+
+        time.sleep(2)
 
 def main():
     daemon = Pyro5.server.Daemon()         # make a Pyro daemon
@@ -68,7 +83,9 @@ def main():
     uri = daemon.register(Servidor)        # register the greeting maker as a Pyro object
     ns.register("Agenda", uri)             # register the object with a name in the name server
 
-    print("Ready.")                
+    print("Ready.")  
+    thread = threading.Thread(target=verificarAlertas)
+    thread.start()              
     daemon.requestLoop()   
     
 if __name__ == "__main__":

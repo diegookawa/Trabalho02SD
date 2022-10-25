@@ -13,7 +13,7 @@ class cliente_callback(object):
         self.referenciaCliente = ""
 
     def notificacao(self, msg):
-        print("callback recebido do servidor!")
+        print(msg)
 
     def receberMensagemCompromisso(self, msg):
         option = int(input(msg))
@@ -42,7 +42,7 @@ class cliente_callback(object):
         compromisso = {}
         convidadosCompromisso = None
         nomeCompromisso = input("Informe o nome do compromisso: ")
-        dataCompromisso = input("Informe a data do compromisso(dd/mm/aaaa): ")
+        dataCompromisso = input("Informe a data do compromisso(AAAA-MM-DD): ")
         horarioCompromisso = input("Informe o horario do compromisso: ")
         compromisso["horarioAlerta"] = None
 
@@ -96,7 +96,7 @@ def main():
                     time.sleep(0.3)
 
                 elif option == 3:
-                    dataCompromisso = input("Informe a data do compromisso a ser consultado (dd/mm/aaaa): ")
+                    dataCompromisso = input("Informe a data do compromisso a ser consultado (AAAA-MM-DD): ")
                     servidor.consultarCompromisso(dataCompromisso, callback.referenciaCliente)
                     time.sleep(0.3)
                     
