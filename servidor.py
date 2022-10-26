@@ -1,6 +1,7 @@
-# saved as greeting-server.py
-from tokenize import String
-from traceback import print_tb
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+# Desenvolvido por: Diego Henrique Arenas Okawa - 2127890 &&                                                                                                            #
+#                   Mario José Miyamoto Kowalski - 2128047                                                                                                              #
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 import Pyro5.api
 import datetime
 import threading
@@ -26,6 +27,10 @@ class Servidor(object):
     @Pyro5.server.oneway
     def cadastrarCompromisso(self, nome, compromisso, convidadosCompromisso):
         Servidor.compromissos.append((nome, compromisso))
+        msg = 'Compromisso "' + compromisso['nome'] + '" confirmado'
+        callback = Pyro5.api.Proxy(Servidor.clientes[nome])
+        callback.receberMensagemConfirmacao(msg, self.assinar(msg))
+
         if(convidadosCompromisso is not None):
             convidados = convidadosCompromisso.split(",")
             nomeCompromisso = compromisso["nome"]
@@ -34,9 +39,7 @@ class Servidor(object):
                 if(Servidor.clientes.get(convidado) is not None):
                     callbackConvidado = Pyro5.api.Proxy(Servidor.clientes[convidado])   
                     msg = 'Deseja participar do compromisso: ' + nomeCompromisso + '?\n1 - Sim\n2 - Não\n'
-                    print("Pre-opt")
                     option = callbackConvidado.receberMensagemCompromisso(msg, self.assinar(msg))
-                    print("Pos-opt")
                     
                     if option == 1:
                         novoCompromisso = compromisso.copy()

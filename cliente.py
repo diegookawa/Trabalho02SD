@@ -1,4 +1,7 @@
-from winreg import REG_OPTION_NON_VOLATILE
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------#
+# Desenvolvido por: Diego Henrique Arenas Okawa - 2127890 &&                                                                                                            #
+#                   Mario José Miyamoto Kowalski - 2128047                                                                                                              #
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 import Pyro5.api
 import threading
 import time
@@ -22,25 +25,32 @@ class cliente_callback(object):
         print(msg)
         self.busy = False
 
+    def receberMensagemConfirmacao(self, msg, sig):
+        self.busy = True
+        if(self.verificaAssinatura(msg, sig)):
+            print(msg)
+            self.busy = False
+
     def receberMensagemCompromisso(self, msg, sig):
         self.busy = True
-        if(self.verifcaAssinatura(msg, sig)):
+        if(self.verificaAssinatura(msg, sig)):
             option = int(input(msg))
             self.busy = False
             return option
         else:
+            self.busy = False
             return None
 
     def receberMensagemHorario(self, msg, sig):
         self.busy = True
-        if(self.verifcaAssinatura(msg, sig)):
+        if(self.verificaAssinatura(msg, sig)):
             horario = input(msg)
             self.busy = False
             return horario
         else:
             return None
 
-    def verifcaAssinatura(self, msg, sig):
+    def verificaAssinatura(self, msg, sig):
         sig = base64.b64decode(sig['data'])
         bmsg = bytes(msg, 'utf-8')
         h = SHA256.new(bmsg)
@@ -54,7 +64,7 @@ class cliente_callback(object):
         except (TypeError):
             print("Erro de tipo")
             return False
-            
+
     def loopThread(daemon):
         #thread para ficar escutando chamadas de método do servidor
         daemon.requestLoop()
@@ -67,12 +77,13 @@ class cliente_callback(object):
 
     def imprimirCompromissos(self, compromissos):
         self.busy = True
+        if(len(compromissos) == 0):
+            print("Nenhum compromisso encontrado")
         for compromisso in compromissos:
-            print(f"Nome: {compromisso['nome']}, Data: {compromisso['data']}, Horário: {compromisso['horario']}", end=" ")
+            print(f"Nome: {compromisso['nome']}, Data: {compromisso['data']}, Horário: {compromisso['horario']}", end="")
             if(compromisso['horarioAlerta'] is not None):
-                print(f"Horário de Alerta: {compromisso['horarioAlerta']}")
+                print(f", Horário de Alerta: {compromisso['horarioAlerta']}")
         self.busy = False
-        input("Digite ENTER para voltar...")
 
     def cadastrarCompromisso(self):
         self.busy = True
@@ -129,22 +140,22 @@ def main():
                     if option == 1:
                         compromisso, convidadosCompromisso = callback.cadastrarCompromisso()
                         servidor.cadastrarCompromisso(callback.nome, compromisso, convidadosCompromisso)
-                        time.sleep(0.3)
+                        time.sleep(0.5)
 
                     elif option == 2:
                         nomeCompromisso = input("Informe o nome do compromisso a ser cancelado: ")
                         servidor.cancelarCompromisso(nomeCompromisso)
-                        time.sleep(0.3)
+                        time.sleep(0.5)
 
                     elif option == 3:
                         dataCompromisso = input("Informe a data do compromisso a ser consultado (AAAA-MM-DD): ")
                         servidor.consultarCompromisso(dataCompromisso, callback.referenciaCliente)
-                        time.sleep(0.3)
+                        time.sleep(0.5)
                         
                     elif option == 4:
-                        time.sleep(0.3)
+                        time.sleep(0.5)
                 else:
-                    time.sleep(0.3)
+                    time.sleep(0.5)
             except:
                 pass
 
