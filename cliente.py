@@ -1,6 +1,8 @@
+from winreg import REG_OPTION_NON_VOLATILE
 import Pyro5.api
 import threading
 import time
+import base64
 from Crypto.Hash import SHA256
 from Crypto.Signature import pkcs1_15
 from Crypto.PublicKey import RSA
@@ -14,7 +16,6 @@ class cliente_callback(object):
         self.public_key = ""
         self.referenciaCliente = ""
         self.busy = False
-        hash = ""
 
     def notificacao(self, msg):
         self.busy = True
@@ -40,18 +41,20 @@ class cliente_callback(object):
             return None
 
     def verifcaAssinatura(self, msg, sig):
+        sig = base64.b64decode(sig['data'])
         bmsg = bytes(msg, 'utf-8')
-        print("Bytes string")
         h = SHA256.new(bmsg)
-        print("Hash update")
+        key = RSA.import_key(self.public_key)
         try:
-            key = RSA.import_key(self.public_key)
             pkcs1_15.new(key).verify(h, sig)
-            print ("The signature is valid.")
             return True
-        except (ValueError, TypeError):
+        except (ValueError):
             print ("The signature is not valid.")
             return False
+        except (TypeError):
+            print("Erro de tipo")
+            return False
+            
     def loopThread(daemon):
         #thread para ficar escutando chamadas de método do servidor
         daemon.requestLoop()
@@ -60,8 +63,7 @@ class cliente_callback(object):
         return self.nome
 
     def setPublic_key(self, public_key):
-        cliente_callback.public_key = public_key
-        self.verifier = pkcs1_15.new(public_key)
+        self.public_key = base64.b64decode(public_key['data'])
 
     def imprimirCompromissos(self, compromissos):
         self.busy = True

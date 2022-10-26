@@ -33,9 +33,8 @@ class Servidor(object):
             for convidado in convidados:
                 if(Servidor.clientes.get(convidado) is not None):
                     callbackConvidado = Pyro5.api.Proxy(Servidor.clientes[convidado])   
-                    msg = 'Deseja participar do compromisso: + ' + nomeCompromisso + '?\n1 - Sim\n2 - Não\n'
+                    msg = 'Deseja participar do compromisso: ' + nomeCompromisso + '?\n1 - Sim\n2 - Não\n'
                     print("Pre-opt")
-                    sig = self.assinar(msg)
                     option = callbackConvidado.receberMensagemCompromisso(msg, self.assinar(msg))
                     print("Pos-opt")
                     
