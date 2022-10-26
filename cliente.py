@@ -1,7 +1,9 @@
-# saved as greeting-client.py
 import Pyro5.api
 import threading
 import time
+from Crypto.Hash import SHA256
+from Crypto.Signature import pkcs1_15
+from Crypto.PublicKey import RSA
 
 @Pyro5.api.expose
 @Pyro5.api.callback
@@ -11,15 +13,45 @@ class cliente_callback(object):
         self.nome = nome
         self.public_key = ""
         self.referenciaCliente = ""
+        self.busy = False
+        hash = ""
 
     def notificacao(self, msg):
+        self.busy = True
         print(msg)
+        self.busy = False
 
-    def receberMensagemCompromisso(self, msg):
-        option = int(input(msg))
-        
-        return option
+    def receberMensagemCompromisso(self, msg, sig):
+        self.busy = True
+        if(self.verifcaAssinatura(msg, sig)):
+            option = int(input(msg))
+            self.busy = False
+            return option
+        else:
+            return None
 
+    def receberMensagemHorario(self, msg, sig):
+        self.busy = True
+        if(self.verifcaAssinatura(msg, sig)):
+            horario = input(msg)
+            self.busy = False
+            return horario
+        else:
+            return None
+
+    def verifcaAssinatura(self, msg, sig):
+        bmsg = bytes(msg, 'utf-8')
+        print("Bytes string")
+        h = SHA256.new(bmsg)
+        print("Hash update")
+        try:
+            key = RSA.import_key(self.public_key)
+            pkcs1_15.new(key).verify(h, sig)
+            print ("The signature is valid.")
+            return True
+        except (ValueError, TypeError):
+            print ("The signature is not valid.")
+            return False
     def loopThread(daemon):
         #thread para ficar escutando chamadas de método do servidor
         daemon.requestLoop()
@@ -29,16 +61,19 @@ class cliente_callback(object):
 
     def setPublic_key(self, public_key):
         cliente_callback.public_key = public_key
+        self.verifier = pkcs1_15.new(public_key)
 
     def imprimirCompromissos(self, compromissos):
+        self.busy = True
         for compromisso in compromissos:
             print(f"Nome: {compromisso['nome']}, Data: {compromisso['data']}, Horário: {compromisso['horario']}", end=" ")
             if(compromisso['horarioAlerta'] is not None):
                 print(f"Horário de Alerta: {compromisso['horarioAlerta']}")
-
+        self.busy = False
         input("Digite ENTER para voltar...")
 
     def cadastrarCompromisso(self):
+        self.busy = True
         compromisso = {}
         convidadosCompromisso = None
         nomeCompromisso = input("Informe o nome do compromisso: ")
@@ -59,6 +94,8 @@ class cliente_callback(object):
         compromisso["data"] = dataCompromisso
         compromisso["horario"] = horarioCompromisso
         compromisso["alertado"] = False
+
+        self.busy = False
         
         return compromisso, convidadosCompromisso
 
@@ -84,26 +121,28 @@ def main():
         option = -1
         while option != 5:
             try:
-                option = int(input("Informe uma opcao:\n1 - Cadastrar compromisso\n2 - Cancelar compromisso\n3 - Consultar compromissos\n4 - Atualizar\n5 - Sair\n"))
+                if not callback.busy:
+                    option = int(input("Informe uma opcao:\n1 - Cadastrar compromisso\n2 - Cancelar compromisso\n3 - Consultar compromissos\n4 - Atualizar\n5 - Sair\n"))
 
-                if option == 1:
-                    compromisso, convidadosCompromisso = callback.cadastrarCompromisso()
-                    servidor.cadastrarCompromisso(callback.nome, compromisso, convidadosCompromisso)
-                    time.sleep(0.3)
+                    if option == 1:
+                        compromisso, convidadosCompromisso = callback.cadastrarCompromisso()
+                        servidor.cadastrarCompromisso(callback.nome, compromisso, convidadosCompromisso)
+                        time.sleep(0.3)
 
-                elif option == 2:
-                    nomeCompromisso = input("Informe o nome do compromisso a ser cancelado: ")
-                    servidor.cancelarCompromisso(nomeCompromisso)
-                    time.sleep(0.3)
+                    elif option == 2:
+                        nomeCompromisso = input("Informe o nome do compromisso a ser cancelado: ")
+                        servidor.cancelarCompromisso(nomeCompromisso)
+                        time.sleep(0.3)
 
-                elif option == 3:
-                    dataCompromisso = input("Informe a data do compromisso a ser consultado (AAAA-MM-DD): ")
-                    servidor.consultarCompromisso(dataCompromisso, callback.referenciaCliente)
+                    elif option == 3:
+                        dataCompromisso = input("Informe a data do compromisso a ser consultado (AAAA-MM-DD): ")
+                        servidor.consultarCompromisso(dataCompromisso, callback.referenciaCliente)
+                        time.sleep(0.3)
+                        
+                    elif option == 4:
+                        time.sleep(0.3)
+                else:
                     time.sleep(0.3)
-                    
-                elif option == 4:
-                    time.sleep(0.3)
-
             except:
                 pass
 

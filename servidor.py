@@ -1,8 +1,12 @@
 # saved as greeting-server.py
+from tokenize import String
+from traceback import print_tb
 import Pyro5.api
 import datetime
 import threading
 import time
+from Crypto.Hash import SHA256
+from Crypto.Signature import pkcs1_15
 from Crypto.PublicKey import RSA
 
 @Pyro5.api.expose
@@ -28,11 +32,24 @@ class Servidor(object):
 
             for convidado in convidados:
                 if(Servidor.clientes.get(convidado) is not None):
-                    callbackConvidado = Pyro5.api.Proxy(Servidor.clientes[convidado])            
-                    option = callbackConvidado.receberMensagemCompromisso(f"Deseja participar do compromisso: {nomeCompromisso}?\n1 - Sim\n2 - Não\n")
+                    callbackConvidado = Pyro5.api.Proxy(Servidor.clientes[convidado])   
+                    msg = 'Deseja participar do compromisso: + ' + nomeCompromisso + '?\n1 - Sim\n2 - Não\n'
+                    print("Pre-opt")
+                    sig = self.assinar(msg)
+                    option = callbackConvidado.receberMensagemCompromisso(msg, self.assinar(msg))
+                    print("Pos-opt")
                     
                     if option == 1:
                         novoCompromisso = compromisso.copy()
+                        novoCompromisso['alertado'] = False
+                        msg = "Deseja ser alertado: " + nomeCompromisso + "?\n1 - Sim\n2 - Não\n"
+                        option = callbackConvidado.receberMensagemCompromisso(msg, self.assinar(msg))
+
+                        if option == 1:
+                            msg = "Em que horario deseja ser alertado? "
+                            novoCompromisso['horarioAlerta'] = callbackConvidado.receberMensagemHorario(msg, self.assinar(msg))
+                        elif option == 2:
+                            novoCompromisso['horarioAlerta'] = None
                         Servidor.compromissos.append((callbackConvidado.getNome(), novoCompromisso))
 
     @Pyro5.server.oneway
@@ -58,6 +75,15 @@ class Servidor(object):
             if name == element['nome']:
                 return True
         return False
+
+    def assinar(self, msg):
+        bmsg = bytes(msg, 'utf-8')
+        h = SHA256.new()
+        h.update(bmsg)
+        key = RSA.import_key(self.private_key)
+        sig = pkcs1_15.new(key).sign(h)
+        return sig
+
 
 def verificarAlertas():
     while True:
